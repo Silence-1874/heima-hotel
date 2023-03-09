@@ -2,10 +2,12 @@ package cn.itcast.hotel;
 
 import cn.itcast.hotel.constants.HotelConstants;
 import org.apache.http.HttpHost;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +31,19 @@ public class HotelIndexTest {
         request.source(HotelConstants.MAPPING_TEMPLATE, XContentType.JSON);
         // 3.发送请求
         client.indices().create(request, RequestOptions.DEFAULT);
+    }
+
+    @Test
+    void testDeleteHotelIndex() throws IOException {
+        DeleteIndexRequest request = new DeleteIndexRequest("hotel");
+        client.indices().delete(request, RequestOptions.DEFAULT);
+    }
+
+    @Test
+    void testExistHotelIndex() throws IOException {
+        GetIndexRequest request = new GetIndexRequest("hotel");
+        boolean exists = client.indices().exists(request, RequestOptions.DEFAULT);
+        System.err.println(exists);
     }
 
     @BeforeEach
