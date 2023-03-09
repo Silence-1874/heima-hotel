@@ -8,6 +8,7 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -46,12 +47,23 @@ public class HotelDocumentTest {
         System.out.println(hotelDoc);
     }
 
+    @Test
+    void testUpdateDocument() throws IOException {
+        UpdateRequest request = new UpdateRequest("hotel", "61083");
+        request.doc(
+                "price", "1000",
+                "starName", "四钻"
+        );
+        client.update(request, RequestOptions.DEFAULT);
+    }
+
     @BeforeEach
     void setUp() {
         this.client = new RestHighLevelClient(RestClient.builder(
                 HttpHost.create("http://119.8.50.119:9200")
         ));
     }
+
 
     @AfterEach
     void tearDown() throws IOException {
