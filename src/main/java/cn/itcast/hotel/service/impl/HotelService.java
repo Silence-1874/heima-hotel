@@ -21,6 +21,9 @@ import org.elasticsearch.index.query.functionscore.FunctionScoreQueryBuilder;
 import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +31,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class HotelService extends ServiceImpl<HotelMapper, Hotel> implements IHotelService {
@@ -63,6 +68,57 @@ public class HotelService extends ServiceImpl<HotelMapper, Hotel> implements IHo
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public Map<String, List<String>> filters(RequestParam params) {
+        try {
+            SearchRequest request = new SearchRequest("hotel");
+            request.source().size(0);
+            buildBasicQuery(params, request);
+            buildAggregation(request);
+            SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+            Map<String, List<String>> result = new HashMap<>();
+            Aggregations aggregations = response.getAggregations();
+            List<String> brandList = getAggByName(aggregations, "brandAgg");
+            result.put("brand", brandList);
+            List<String> cityList = getAggByName(aggregations, "cityAgg");
+            result.put("city", cityList);
+            List<String> starList = getAggByName(aggregations, "starAgg");
+            result.put("starName", starList);
+            return result;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private List<String> getAggByName(Aggregations aggregations, String aggName) {
+        Terms aggTerms = aggregations.get(aggName);
+        List<? extends Terms.Bucket> buckets = aggTerms.getBuckets();
+        List<String> aggList = new ArrayList<>();
+        for (Terms.Bucket bucket : buckets) {
+            String key = bucket.getKeyAsString();
+            aggList.add(key);
+        }
+        return aggList;
+    }
+
+    private void buildAggregation(SearchRequest request) {
+        request.source().aggregation(AggregationBuilders
+                .terms("brandAgg")
+                .field("brand")
+                .size(20)
+        );
+        request.source().aggregation(AggregationBuilders
+                .terms("cityAgg")
+                .field("city")
+                .size(20)
+        );
+        request.source().aggregation(AggregationBuilders
+                .terms("starAgg")
+                .field("starName")
+                .size(20)
+        );
     }
 
     private void buildBasicQuery(RequestParam params, SearchRequest request) {
