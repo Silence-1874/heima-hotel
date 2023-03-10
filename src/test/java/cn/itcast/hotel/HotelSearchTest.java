@@ -12,6 +12,9 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
 import org.elasticsearch.search.sort.SortOrder;
@@ -21,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 public class HotelSearchTest {
@@ -94,6 +98,24 @@ public class HotelSearchTest {
                 }
             }
             System.out.println(hotelDoc);
+        }
+    }
+
+    @Test
+    void testAggregation() throws IOException {
+        SearchRequest request = new SearchRequest("hotel");
+        request.source().size(0);
+        request.source().aggregation(AggregationBuilders
+                .terms("brandAgg")
+                .field("brand")
+                .size(20));
+        SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+        Aggregations aggregations = response.getAggregations();
+        Terms brandTerms = aggregations.get("brandAgg");
+        List<? extends Terms.Bucket> buckets = brandTerms.getBuckets();
+        for (Terms.Bucket bucket : buckets) {
+            String key = bucket.getKeyAsString();
+            System.out.println(key);
         }
     }
 
