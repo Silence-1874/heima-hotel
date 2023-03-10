@@ -8,6 +8,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -27,8 +28,33 @@ public class HotelSearchTest {
         request.source()
                 .query(QueryBuilders.matchAllQuery());
         SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+        handleResponse(response);
+    }
+
+    @Test
+    void testMatch() throws IOException {
+        SearchRequest request = new SearchRequest("hotel");
+        request.source()
+                .query(QueryBuilders.matchQuery("brand", "如家"));
+        SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+        handleResponse(response);
+    }
+
+    @Test
+    void testBool() throws IOException {
+        SearchRequest request = new SearchRequest("hotel");
+        BoolQueryBuilder boolQuery= QueryBuilders.boolQuery();
+        boolQuery.must(QueryBuilders.termQuery("city", "上海"));
+        boolQuery.filter(QueryBuilders.rangeQuery("price").lte(250));
+        request.source().query(boolQuery);
+        SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+        handleResponse(response);
+    }
+
+    private void handleResponse(SearchResponse response) {
         SearchHits searchHits = response.getHits();
         long total = searchHits.getTotalHits().value;
+        System.out.println("共" + total + "条数据");
         SearchHit[] hits = searchHits.getHits();
         for (SearchHit hit : hits) {
             String json = hit.getSourceAsString();
