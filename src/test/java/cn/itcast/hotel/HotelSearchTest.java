@@ -12,6 +12,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.sort.SortOrder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,17 @@ public class HotelSearchTest {
         boolQuery.must(QueryBuilders.termQuery("city", "上海"));
         boolQuery.filter(QueryBuilders.rangeQuery("price").lte(250));
         request.source().query(boolQuery);
+        SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+        handleResponse(response);
+    }
+
+    @Test
+    void testPageAndSort() throws IOException {
+        int page = 3, size = 5;
+        SearchRequest request = new SearchRequest("hotel");
+        request.source().query(QueryBuilders.matchAllQuery());
+        request.source().sort("price", SortOrder.ASC);
+        request.source().from((page - 1) * size).size(5);
         SearchResponse response = client.search(request, RequestOptions.DEFAULT);
         handleResponse(response);
     }
