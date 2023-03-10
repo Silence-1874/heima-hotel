@@ -13,6 +13,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -36,12 +37,7 @@ public class HotelService extends ServiceImpl<HotelMapper, Hotel> implements IHo
             SearchRequest request = new SearchRequest("hotel");
             // 2.准备DSL
             // 2.1.query
-            String key = params.getKey();
-            if (StringUtils.isEmpty(key)) {
-                request.source().query(QueryBuilders.matchAllQuery());
-            } else {
-                request.source().query(QueryBuilders.matchQuery("name", key));
-            }
+            buildBasicQuery(params, request);
             // 2.2.page
             int page = params.getPage();
             int size = params.getSize();
@@ -53,6 +49,31 @@ public class HotelService extends ServiceImpl<HotelMapper, Hotel> implements IHo
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void buildBasicQuery(RequestParam params, SearchRequest request) {
+        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+        String key = params.getKey();
+        if (StringUtils.isEmpty(key)) {
+            boolQuery.must(QueryBuilders.matchAllQuery());
+        } else {
+            boolQuery.must(QueryBuilders.matchQuery("name", key));
+        }
+        // 过滤条件
+        if (!StringUtils.isEmpty(params.getCity())) {
+            boolQuery.filter(QueryBuilders.termQuery("city", params.getCity()));
+        }
+        if (!StringUtils.isEmpty(params.getBrand())) {
+            boolQuery.filter(QueryBuilders.termQuery("brand", params.getBrand()));
+        }
+        if (!StringUtils.isEmpty(params.getStarName())) {
+            boolQuery.filter(QueryBuilders.termQuery("starName", params.getStarName()));
+        }
+        if (params.getMinPrice() != null && params.getMaxPrice() != null) {
+            boolQuery.filter(QueryBuilders
+                    .rangeQuery("price").gte(params.getMinPrice()).lte(params.getMaxPrice()));
+        }
+        request.source().query(boolQuery);
     }
 
     private PageResult handleResponse(SearchResponse response) {
